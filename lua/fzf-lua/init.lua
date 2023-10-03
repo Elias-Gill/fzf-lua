@@ -170,6 +170,7 @@ do
     grep_visual = { "fzf-lua.providers.grep", "grep_visual" },
     grep_project = { "fzf-lua.providers.grep", "grep_project" },
     live_grep = { "fzf-lua.providers.grep", "live_grep" },
+    live_grep_native = { "fzf-lua.providers.grep", "live_grep_native" },
     live_grep_resume = { "fzf-lua.providers.grep", "live_grep_resume" },
     git_status = { "fzf-lua.providers.git", "status" },
     git_commits = { "fzf-lua.providers.git", "commits" },

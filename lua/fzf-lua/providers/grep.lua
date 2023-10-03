@@ -339,7 +339,8 @@ M.live_grep_mt = function(opts)
   core.fzf_exec(nil, opts)
 end
 
-M.live_grep = function(opts)
+
+M.live_grep_native = function(opts)
   -- backward compatibility, by setting git|files icons to false
   -- we force 'mt_cmd_wrapper' to pipe the command as is, so fzf
   -- runs the command directly in the 'change:reload' event
@@ -351,10 +352,50 @@ M.live_grep = function(opts)
   return M.live_grep_mt(opts)
 end
 
+M.live_grep = function(opts)
+  opts = config.normalize_opts(opts, config.globals.grep)
+  if not opts then return end
+
+  if opts.multiprocess then
+    return M.live_grep_mt(opts)
+  else
+    return M.live_grep_st(opts)
+  end
+end
+
+M.live_grep_glob = function(opts)
+  opts = config.normalize_opts(opts, config.globals.grep)
+  if not opts then return end
+
+  if opts.multiprocess then
+    return M.live_grep_glob_mt(opts)
+  else
+    return M.live_grep_glob_st(opts)
+  end
+end
+
 M.live_grep_resume = function(opts)
   if not opts then opts = {} end
   opts.resume = true
   return M.live_grep(opts)
+end
+
+M.grep_last = function(opts)
+  if not opts then opts = {} end
+  opts.resume = true
+  return M.grep(opts)
+end
+
+M.grep_cword = function(opts)
+  if not opts then opts = {} end
+  opts.search = vim.fn.expand("<cword>")
+  return M.grep(opts)
+end
+
+M.grep_cWORD = function(opts)
+  if not opts then opts = {} end
+  opts.search = vim.fn.expand("<cWORD>")
+  return M.grep(opts)
 end
 
 M.grep_visual = function(opts)
@@ -376,3 +417,48 @@ M.grep_project = function(opts)
   end
   return M.grep(opts)
 end
+
+M.grep_curbuf = function(opts)
+  -- we can't call 'normalize_opts' here because it will override
+  -- 'opts.__call_opts' which will confuse 'actions.grep_lgrep'
+  if type(opts) == "function" then
+    opts = opts()
+  elseif not opts then
+    opts = {}
+  end
+  -- rg globs are meaningless here since we searching
+  -- a single file
+  opts.rg_glob = false
+  opts.rg_opts = make_entry.rg_insert_args(config.globals.grep.rg_opts, " --with-filename")
+  opts.grep_opts = make_entry.rg_insert_args(config.globals.grep.grep_opts, " --with-filename")
+  if opts.exec_empty_query == nil then
+    opts.exec_empty_query = true
+  end
+  opts.fzf_opts = vim.tbl_extend("keep",
+    opts.fzf_opts or {}, config.globals.blines.fzf_opts)
+  opts.filename = vim.api.nvim_buf_get_name(0)
+  if #opts.filename > 0 and vim.loop.fs_stat(opts.filename) then
+    opts.filename = path.relative(opts.filename, vim.loop.cwd())
+    if opts.lgrep then
+      return M.live_grep(opts)
+    else
+      opts.search = opts.search or ""
+      return M.grep(opts)
+    end
+  else
+    utils.info("Rg current buffer requires file on disk")
+    return
+  end
+end
+
+M.lgrep_curbuf = function(opts)
+  if type(opts) == "function" then
+    opts = opts()
+  elseif not opts then
+    opts = {}
+  end
+  opts.lgrep = true
+  return M.grep_curbuf(opts)
+end
+
+return M
