@@ -340,7 +340,7 @@ M.live_grep_mt = function(opts)
 end
 
 
-M.live_grep_native = function(opts)
+M.live_grep = function(opts)
   -- backward compatibility, by setting git|files icons to false
   -- we force 'mt_cmd_wrapper' to pipe the command as is, so fzf
   -- runs the command directly in the 'change:reload' event
@@ -350,17 +350,6 @@ M.live_grep_native = function(opts)
   opts.path_shorten = false
   opts.rg_glob = false
   return M.live_grep_mt(opts)
-end
-
-M.live_grep = function(opts)
-  opts = config.normalize_opts(opts, config.globals.grep)
-  if not opts then return end
-
-  if opts.multiprocess then
-    return M.live_grep_mt(opts)
-  else
-    return M.live_grep_st(opts)
-  end
 end
 
 M.live_grep_glob = function(opts)
